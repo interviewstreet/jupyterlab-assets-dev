@@ -1,0 +1,2 @@
+(self["webpackChunk_jupyterlab_application_top"]=self["webpackChunk_jupyterlab_application_top"]||[]).push([[9310],{59310:(a,t,o)=>{"use strict";o.r(t);o.d(t,{default:()=>u});var r=o(18241);var e=o.n(r);var l=o(72449);var n=o.n(l);var p=o(70278);var s=o.n(p);const c={id:"@jupyterlab/celltags",autoStart:true,requires:[r.INotebookTools,r.INotebookTracker,p.ITranslator],activate:(a,t,o,r)=>{const e=new l.TagTool(o,a,r);t.addItem({tool:e,rank:1.6})}};const u=c}}]);
+//# sourceMappingURL=9310.6d816af50837b904d36a.js.map?v=6d816af50837b904d36a
