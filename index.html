@@ -1,0 +1,199 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>JupyterLab</title><meta name="viewport" content="width=device-width,initial-scale=1">{# Copy so we do not modify the page_config with updates. #} {% set page_config_full = page_config.copy() %} {# Set a dummy variable - we just want the side effect of the update. #} {% set _ = page_config_full.update(baseUrl=base_url, wsUrl=ws_url) %}<script id="jupyter-config-data" type="application/json">{{ page_config_full | tojson }}</script>{% block favicon %}<link rel="icon" type="image/x-icon" href="{{ base_url | escape }}static/favicons/favicon.ico" class="idle favicon"><link rel="" type="image/x-icon" href="{{ base_url | escape }}static/favicons/favicon-busy-1.ico" class="busy favicon">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.14137c01dd01f5861cd0.js?v=14137c01dd01f5861cd0"></script></head><body><script src="https://hrcdn.net/monitoring/new-relic/jupyterlab_ide.js"></script><script type="module" src="https://hrcdn.net/hr-browser-metric/browser-metric.1.1.0.js"></script><script type="module">window.initMetric({ appName: 'JupyterLab', appCategory: 'JupyterLab', initApp: 'jupyter', metricPostApi: '' })</script><script>(function () {
+          const logState = [];
+
+          const fullstory_console_variables = {
+            orginalConsoleInfo: console.info,
+            orginalConsoleWarn: console.warn,
+            orginalConsoleLog: console.log,
+            orginalConsoleErr: console.error,
+            consoleLogStub: (...messages) => {
+              logState.push({ type: 'log', message: messages.join("") });
+            },
+            consoleInfoStub: (...messages) => {
+              logState.push({ type: 'info', message: messages.join("") });
+            },
+            consoleWarnStub: (...messages) => {
+              logState.push({ type: 'warn', message: messages.join("") });
+            },
+            consoleErrStub: (...messages) => {
+              logState.push({ type: 'error', message: messages.join("") });
+            },
+          };
+
+          console.info = fullstory_console_variables.consoleLogStub;
+          console.log = fullstory_console_variables.consoleInfoStub;
+          console.warn = fullstory_console_variables.consoleWarnStub;
+          console.error = fullstory_console_variables.consoleErrStub;
+
+          const onErrorCallback = (e) => {
+            const errInfo = e
+              ? {
+                stack: e.error && e.error.stack,
+                fileName: e.filename,
+                lineno: e.lineno,
+                colno: e.colno,
+              }
+              : {};
+            logState.push({
+              type: 'error',
+              message: e ? (e.error ? e.error.message : '') : '',
+              errInfo,
+            });
+          };
+
+          window.addEventListener('error', onErrorCallback);
+
+          // Full Story Init | Start
+          window['_fs_run_in_iframe'] = true;
+          window['_fs_debug'] = false;
+          window['_fs_host'] = 'fsrelay.hackerrank.com';
+          window['_fs_script'] = 'fsrelay.hackerrank.com/s/fs.js';
+          /* The below org ID should be same as the one in our fullstory account */
+          window['_fs_org'] = 'Q02VK';
+          window['_fs_namespace'] = 'JUPYTERLAB_FS';
+          window['_fs_ready'] = function () {
+            console.info = fullstory_console_variables.orginalConsoleInfo;
+            console.log = fullstory_console_variables.orginalConsoleLog;
+            console.warn = fullstory_console_variables.orginalConsoleWarn;
+            console.error = fullstory_console_variables.orginalConsoleErr;
+
+            window.removeEventListener('error', onErrorCallback);
+
+            const fs_instance = window['JUPYTERLAB_FS'];
+
+            /**
+             * FS.event api has limit of 10 calls per second and 30 calls per minute.
+             * https://help.fullstory.com/hc/en-us/articles/360020623234-Client-API-Requirements#custom-property-rate-limiting
+            */
+            const EVENTS_PER_MINUTE = 30;
+            const EVENTS_PER_SECOND = 10;
+            const startTime = Date.now();
+
+            const sendLogToFs = (log) => {
+              const message = 'Jupyterlab (' + log.type + '): ' + log.message;
+              const eventObj = log.errInfo ? log.errInfo : {};
+              if (fs_instance && fs_instance.event) fs_instance.event(message, eventObj);
+            }
+
+            const getTime = () => {
+              return (Date.now() - startTime) / 1000;
+            }
+
+            const flushPerMinute = async (events) => {
+              // there are supposed to be 30 events or less.
+              const limit = Math.ceil(events.length / EVENTS_PER_SECOND);
+              for (let i = 0; i < limit; i++) {
+                const eventsList = events.slice(i * EVENTS_PER_SECOND, (i + 1) * EVENTS_PER_SECOND);
+                eventsList.forEach(log => sendLogToFs(log));
+                await new Promise((res, _) => setTimeout(res, 1000));
+              }
+            }
+
+            const flushEvents = async (events) => {
+              if (events.length === 0) return;
+              // Groups events into blocks of 30 events.
+              const limit = Math.ceil(events.length / EVENTS_PER_MINUTE);
+              console.log("Have ", events.length, " events to flush");
+              console.log("Started flushing events at: ", getTime());
+              for (let i = 0; i < limit; i++) {
+                console.log("Group ", i, ", started at: ", getTime());
+                const eventsList = events.slice(i * EVENTS_PER_MINUTE, (i + 1) * EVENTS_PER_MINUTE);
+                await flushPerMinute(eventsList);
+                console.log("Group ", i, ", ended at: ", getTime());
+                await new Promise((res, _) => setTimeout(res, 70 * 1000));
+              }
+            }
+
+            flushEvents(logState);
+          };
+          (function (m, n, e, t, l, o, g, y) {
+            if (e in m) {
+              if (m.console && m.console.log) {
+                m.console.log(
+                  'FullStory namespace conflict. Please set window["_fs_namespace"].'
+                );
+              }
+              return;
+            }
+            g = m[e] = function (a, b, s) {
+              g.q ? g.q.push([a, b, s]) : g._api(a, b, s);
+            };
+            g.q = [];
+            o = n.createElement(t);
+            o.async = 1;
+            o.crossOrigin = 'anonymous';
+            o.src = 'https://' + _fs_script;
+            y = n.getElementsByTagName(t)[0];
+            y.parentNode.insertBefore(o, y);
+            g.identify = function (i, v, s) {
+              g(l, { uid: i }, s);
+              if (v) g(l, v, s);
+            };
+            g.setUserVars = function (v, s) {
+              g(l, v, s);
+            };
+            g.event = function (i, v, s) {
+              g('event', { n: i, p: v }, s);
+            };
+            g.anonymize = function () {
+              g.identify(!!0);
+            };
+            g.shutdown = function () {
+              g('rec', !1);
+            };
+            g.restart = function () {
+              g('rec', !0);
+            };
+            g.log = function (a, b) {
+              g('log', [a, b]);
+            };
+            g.consent = function (a) {
+              g('consent', !arguments.length || a);
+            };
+            g.identifyAccount = function (i, v) {
+              o = 'account';
+              v = v || {};
+              v.acctId = i;
+              g(o, v);
+            };
+            g.clearUserCookie = function () { };
+            g.setVars = function (n, p) {
+              g('setVars', [n, p]);
+            };
+            g._w = {};
+            y = 'XMLHttpRequest';
+            g._w[y] = m[y];
+            y = 'fetch';
+            g._w[y] = m[y];
+            if (m[y])
+              m[y] = function () {
+                return g._w[y].apply(this, arguments);
+              };
+            g._v = '1.3.0';
+          })(window, document, window['_fs_namespace'], 'script', 'user');
+          // Full Story Init | End
+        })();</script><script>/* Remove token from URL. */
+        (function () {
+          var location = window.location;
+          var search = location.search;
+
+          // If there is no query string, bail.
+          if (search.length <= 1) {
+            return;
+          }
+
+          // Rebuild the query string without the `token`.
+          var query = '?' + search.slice(1).split('&')
+            .filter(function (param) { return param.split('=')[0] !== 'token'; })
+            .join('&');
+
+          // Rebuild the URL with the new query string.
+          var url = location.origin + location.pathname +
+            (query !== '?' ? query : '') + location.hash;
+
+          if (url === location.href) {
+            return;
+          }
+
+          window.history.replaceState({}, '', url);
+        })();</script></body></html>
